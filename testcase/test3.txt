@@ -1,0 +1,4 @@
+INSERT x number false
+INSERT sum (number,number)->number false
+ASIGN x sum(1,1)
+ASSIGNN z sum(12,'abc')
