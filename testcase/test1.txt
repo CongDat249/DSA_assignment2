@@ -1,9 +1,244 @@
-INSERT x number false
-INSERT y string false
+PRINT
+INSERT sf2 string true
+INSERT tBD string true
+PRINT
+ASSIGN sf2 tBD
+PRINT
+END
 BEGIN
-INSERT x number false
+ASSIGN tBD sf2
+LOOKUP sf2
+INSERT g number true
+INSERT azMW number false
 BEGIN
-INSERT z string true
-LOOKUP x
+INSERT eS number true
+LOOKUP q
+INSERT ytPt0 ()->string true
+PRINT
+BEGIN
+LOOKUP azMW
+PRINT
+ASSIGN sf2 ytPt0()
+PRINT
+LOOKUP g
+PRINT
+PRINT
+LOOKUP azMW
+END
+PRINT
+ASSIGN sf2 tBD
+LOOKUP eS
+LOOKUP sf2
+INSERT mIlRv ()->number false
+LOOKUP azMW
+END
+PRINT
+PRINT
+END
+ASSIGN tBD tBD
+PRINT
+PRINT
+PRINT
+LOOKUP ytPt0
+ASSIGN oFr sf2
+END
+ASSIGN tBD tBD
+PRINT
+BEGIN
+ASSIGN eS mIlRv()
+BEGIN
+END
+LOOKUP azMW
+PRINT
+LOOKUP g
+BEGIN
+BEGIN
+BEGIN
+ASSIGN tBD tBD
+ASSIGN azMW sf2
+END
+PRINT
+BEGIN
+PRINT
+INSERT acL (string)->number true
 END
 END
+LOOKUP eS
+INSERT mfG number true
+BEGIN
+PRINT
+BEGIN
+LOOKUP g
+INSERT rf number true
+LOOKUP ytPt0
+PRINT
+END
+BEGIN
+END
+ASSIGN esaV ytPt0()
+LOOKUP rf
+END
+PRINT
+LOOKUP eS
+END
+INSERT qAq number true
+LOOKUP ytPt0
+ASSIGN lq mfG
+PRINT
+LOOKUP azMW
+END
+BEGIN
+LOOKUP ytPt0
+PRINT
+ASSIGN eS qAq
+BEGIN
+LOOKUP qAq
+ASSIGN mIlRv mfG
+PRINT
+END
+END
+PRINT
+LOOKUP mfG
+PRINT
+LOOKUP rf
+END
+PRINT
+INSERT bXk (number)->string true
+LOOKUP sf2
+ASSIGN tBD mfG
+BEGIN
+INSERT dy4UYy string false
+PRINT
+LOOKUP bXk
+END
+BEGIN
+BEGIN
+INSERT jVfLE3 (number,string,number)->number false
+ASSIGN g acL(dy4UYy)
+PRINT
+INSERT xbScFJ ()->number true
+INSERT ot8 number true
+END
+ASSIGN xbScFJ kA1_uy
+BEGIN
+ASSIGN qAq tBD
+INSERT uUPt2C number false
+PRINT
+END
+LOOKUP dy4UYy
+LOOKUP tBD
+LOOKUP qAq
+INSERT uB3WP6 number false
+INSERT zvBNAA string true
+END
+INSERT hc1 string false
+END
+INSERT a (string,number,number)->string false
+END
+PRINT
+INSERT xnW (string)->string true
+END
+INSERT xqdQ9 string false
+ASSIGN a bXk(15)
+INSERT p5F (string)->string false
+LOOKUP tBD
+PRINT
+END
+PRINT
+END
+BEGIN
+LOOKUP hc1
+END
+LOOKUP mfG
+END
+LOOKUP xqdQ9
+END
+INSERT d9c9AH number false
+INSERT rMNor ()->number true
+END
+PRINT
+BEGIN
+END
+INSERT dNBy7 string true
+END
+BEGIN
+END
+ASSIGN qWKJK xqdQ9
+INSERT dz string true
+INSERT uZPT string true
+INSERT w number false
+END
+INSERT eqK3aQ string true
+BEGIN
+BEGIN
+END
+PRINT
+END
+BEGIN
+INSERT uj string true
+BEGIN
+END
+PRINT
+INSERT ojAQ number true
+ASSIGN uZPT hc1
+LOOKUP bXk
+BEGIN
+ASSIGN hc1 eS
+PRINT
+LOOKUP a
+PRINT
+INSERT h number false
+LOOKUP dz
+PRINT
+ASSIGN dNBy7 sf2
+INSERT hvo ()->number true
+BEGIN
+ASSIGN dz acL('Z')
+END
+INSERT yh (string,string)->string false
+INSERT y number true
+LOOKUP eV
+LOOKUP dz
+END
+LOOKUP rMNor
+ASSIGN iz mfG
+BEGIN
+BEGIN
+INSERT diO (string,number)->number false
+END
+INSERT wC50Z number false
+PRINT
+INSERT o27jhI (string)->string true
+LOOKUP dNBy7
+INSERT msMy string false
+LOOKUP h
+END
+ASSIGN g eS
+ASSIGN dNBy7 tBD
+LOOKUP te
+END
+PRINT
+INSERT o99XU number true
+END
+ASSIGN hc1 xnW(eqK3aQ)
+BEGIN
+END
+INSERT vFQ string false
+PRINT
+BEGIN
+END
+LOOKUP wK1
+PRINT
+BEGIN
+INSERT fzWnh (string,number)->string true
+ASSIGN yh tBD
+PRINT
+INSERT gTyCgC string false
+BEGIN
+END
+ASSIGN uj xbScFJ()
+ASSIGN n jVfLE3(205,'SHis',468)
+END
+LOOKUP sf2
+BEGIN
+PRINT

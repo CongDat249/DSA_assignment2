@@ -1,6 +1,6 @@
 #include "SymbolTable.h"
 
-// Symbol implement
+// Constructor
 Symbol::Symbol(string name, int level, int type) {
     this->name = name;
     this->level = level;
@@ -16,30 +16,22 @@ Symbol::Symbol(string name, int level, int type, Symbol *parent) {
     this->left = this->right = nullptr;
 }
 
-bool Symbol::operator==(Symbol x) {
-    return this->level == x.level && !(this->name.compare(x.name));
-}
-
-bool Symbol::operator<(Symbol x) {
-    if (this->level < x.level)
-        return true;
-    else if (this->level == x.level && this->name.compare(x.name) < 0) {
-        return true;
-    }
-    return false;
-}
-
-bool Symbol::operator>(Symbol x) {
-    return !(this->operator<(x) || this->operator==(x));
-}
-// Symbol table implement
 SymbolTable::SymbolTable() {
     this->root = nullptr;
     this->cur_level = 0;
 }
 
-SymbolTable::~SymbolTable() {
-    clear(this->root);
+SymbolTable::~SymbolTable() { clear(this->root); }
+
+// Helper function
+int Symbol::compare(Symbol *x) {
+    int n_diff = this->name.compare(x->name);
+    int l_diff = this->level - x->level;
+
+    if (l_diff > 0 || (l_diff == 0 && n_diff > 0)) return 1;
+    if (l_diff < 0 || (l_diff == 0 && n_diff < 0)) return -1;
+
+    return 0;
 }
 
 void SymbolTable::clear(Symbol *root) {
@@ -50,12 +42,24 @@ void SymbolTable::clear(Symbol *root) {
     delete root;
 }
 
-int SymbolTable::getType(string str_type) {
-    regex function_type("\\(((number|string)(,number|,string)*)?\\)->(number|string)");
-    if (str_type == "number") return 0;
-    if (str_type == "string") return 1;
-    if (regex_match(str_type, function_type)) return 2;
+int SymbolTable::getType(string type) {
+    regex string("string");
+    regex number("number");
+    regex function(
+        "\\(((number|string)(,number|,string)*)?\\)->(number|string)");
+
+    if (regex_match(type, number)) return 0;
+    if (regex_match(type, string)) return 1;
+    if (regex_match(type, function)) return 2;
+
     return -1;
+}
+
+string SymbolTable::preorder(Symbol *root) {
+    if (root == nullptr) return "";
+
+    return root->name + "//" + to_string(root->level) + " " +
+           preorder(root->left) + preorder(root->right);
 }
 
 void SymbolTable::right_rotate(Symbol *x) {
@@ -71,8 +75,7 @@ void SymbolTable::right_rotate(Symbol *x) {
 
     y->parent = x->parent;
     x->left = y->right;
-    if (y->right)
-        y->right->parent = x;
+    if (y->right) y->right->parent = x;
     y->right = x;
     x->parent = y;
 }
@@ -82,8 +85,7 @@ void SymbolTable::left_rotate(Symbol *x) {
 
     Symbol *y = x->right;
     x->right = y->left;
-    if (y->left)
-        y->left->parent = x;
+    if (y->left) y->left->parent = x;
 
     if (x->parent == nullptr)
         this->root = y;
@@ -97,9 +99,8 @@ void SymbolTable::left_rotate(Symbol *x) {
     x->parent = y;
 }
 
-void SymbolTable::splay(Symbol *x) {
-    if (x == nullptr || x->parent == nullptr)
-        return;
+int SymbolTable::splay(Symbol *x) {
+    if (x == nullptr || x->parent == nullptr) return 0;
 
     while (x->parent != nullptr) {
         Symbol *p = x->parent;
@@ -109,7 +110,7 @@ void SymbolTable::splay(Symbol *x) {
             else if (p->right == x)
                 left_rotate(p);
 
-            return;
+            return 1;
         }
         Symbol *g = p->parent;
         if (g->left == p && p->left == x) {
@@ -126,57 +127,160 @@ void SymbolTable::splay(Symbol *x) {
             left_rotate(g);
         }
     }
+
+    return 1;
 }
 
-Symbol *SymbolTable::searchHelper(string name, int level) {
-    int num_comp = 0;
+bool SymbolTable::h_lookup(string name, int level) {
     Symbol x(name, level, 0);
     Symbol *walker = this->root;
     while (walker != nullptr) {
-        if (*walker == x) {
-            return walker;
-        } else if (x < *walker) {
-            num_comp++;
+        int order = x.compare(walker);
+        if (order == 0) {
+            splay(walker);
+            return true;
+        } else if (order < 0) {
+            if (walker->left == nullptr) {
+                splay(walker);
+            }
             walker = walker->left;
         } else {
-            num_comp++;
+            if (walker->right == nullptr) {
+                splay(walker);
+            }
+            walker = walker->right;
+        }
+    }
+    return false;
+}
+
+Symbol *SymbolTable::search_level(string name, int level, int &num_comp) {
+    Symbol x(name, level, 0);
+    Symbol *walker = this->root;
+    while (walker != nullptr) {
+        num_comp++;
+        int order = x.compare(walker);
+        if (order == 0) {
+            return walker;
+        } else if (order < 0) {
+            if (walker->left == nullptr) {
+                return walker;
+            }
+            walker = walker->left;
+        } else {
+            if (walker->right == nullptr) {
+                return walker;
+            }
             walker = walker->right;
         }
     }
     return nullptr;
 }
 
-bool SymbolTable::search(string name) {
-    Symbol *res = nullptr;
-    for (int level = cur_level; level >= 0; level--) {
-        res = searchHelper(name, level);
-        if (res) break;
+Symbol *SymbolTable::getMaxValueNode(Symbol *root) {
+    if (!root) return nullptr;
+    Symbol *w = root;
+    while (w->right) {
+        w = w->right;
     }
-    if (!res) return false;
+    return w;
+}
+
+Symbol *SymbolTable::search(string name, int &num_comp, int &num_splay) {
+    if (this->root == nullptr) return nullptr;
+    for (int level = this->cur_level; level >= 0; level--) {
+        Symbol *res = search_level(name, level, num_comp);
+        num_splay += splay(res);
+        if (this->root->name == name) break;
+    }
+
+    if (this->root->name != name) return nullptr;
+    return this->root;
+}
+
+void SymbolTable::remove(Symbol *res) {
+    if (this->root == nullptr) return;
     splay(res);
-    return true;
+
+    // delete
+    Symbol *lh = this->root->left;
+    Symbol *rh = this->root->right;
+
+    if (!lh && !rh) {
+        delete this->root;
+        return;
+    } else if (!lh) {
+        rh->parent = nullptr;
+        delete this->root;
+        this->root = rh;
+        return;
+    } else {
+        lh->parent = nullptr;
+        delete this->root;
+        Symbol *x = getMaxValueNode(lh);
+        splay(x);
+        this->root = x;
+        x->right = rh;
+        if (rh) {
+            rh->parent = x;
+        }
+    }
+}
+
+void SymbolTable::remove(int level) {
+    Symbol *res = getMaxValueNode(root);
+    while (root) {
+        Symbol *res = getMaxValueNode(root);
+        if (res->level != level) {
+            break;
+        }
+        splay(res);
+        remove(res);
+    }
 }
 
 void SymbolTable::insert(smatch m) {
-    int num_comp = 0;
-    int num_splay = 0;
+    // Get data from smatch m
+    smatch m1;
+    string line = m.str(0);
     string name = m.str(1);
-    string is_static = m.str(m.size() - 1);
+    string type_str = m.str(2);
+    string is_static = m.str(3);
+
     int level = is_static == "true" ? 0 : this->cur_level;
-    int type = getType(m.str(2));
-    if (type == -1) throw InvalidInstruction(m.str(0));
+
+    // Handle type
+    regex string("string");
+    regex number("number");
+    regex function(
+        "\\(((number|string)(,number|,string)*)?\\)->(number|string)");
+
+    int type = -1;
+    if (regex_match(type_str, number)) type = 0;
+    if (regex_match(type_str, string)) type = 1;
+    if (regex_match(type_str, m1, function)) type = 2;
+
+    if (type == -1) throw InvalidInstruction(line);
+    if (type == 2 && level != 0) throw InvalidDeclaration(line);
+
+    int num_splay = 0;
+    int num_comp = 0;
 
     Symbol *new_symbol = new Symbol(name, level, type);
+    if (type == 2) {
+        new_symbol->para = m1.str(0);
+    }
 
     Symbol *walker = this->root;
     Symbol *p = nullptr;
 
     while (walker != nullptr) {
         p = walker;
-        if (*walker > *new_symbol) {
+        int order = new_symbol->compare(walker);
+        if (order < 0) {
             walker = walker->left;
             num_comp++;
-        } else if (*walker < *new_symbol) {
+        } else if (order > 0) {
             walker = walker->right;
             num_comp++;
         } else {
@@ -193,7 +297,7 @@ void SymbolTable::insert(smatch m) {
     walker = new_symbol;
     new_symbol->parent = p;
 
-    if (*new_symbol < *p)
+    if (new_symbol->compare(p) < 0)
         p->left = walker;
     else
         p->right = walker;
@@ -206,86 +310,156 @@ void SymbolTable::insert(smatch m) {
     cout << num_comp << " " << num_splay << endl;
 }
 
+string SymbolTable::getParaType(string para) {
+    regex number("\\d+");
+    regex str("\'[A-Za-z0-9 ]*\'");
+    regex var("[a-z][\\w]*");
+
+    string res = "";
+    string sub = "";
+    for (int i = 0; i < para.length(); i++) {
+        // cout << sub << endl;
+        if (para[i] != ',') {
+            sub += para[i];
+        }
+        if (para[i] == ',' || i == para.length() - 1) {
+            if (regex_match(sub, number))
+                res += "number,";
+            else if (regex_match(sub, str))
+                res += "string,";
+            else if (regex_match(sub, var)) {
+            }
+            else
+                return "error";
+
+            sub = "";
+        }
+    }
+    if (res != " ") return res.substr(0, res.size() - 1);
+    return "";
+}
+
 void SymbolTable::assign(smatch m) {
+    smatch m1;
+    int num_comp = 0;
+    int num_splay = 0;
+    string line = m.str(0);
     string name = m.str(1);
     string value = m.str(2);
 
-    if (!this->search(name)) {
-        throw Undeclared(m.str(0));
-    }
-    Symbol *des = this->root;
     // Regex
-    regex number_expr("\\d+");
-    regex string_expr("\'[A-Za-z0-9 ]*\'");
-    regex var_expr("[a-z][\\w]*");
-    regex function_call_expr("");
+    regex number("\\d+");
+    regex str("\'[A-Za-z0-9 ]*\'");
+    regex var("[a-z][\\w]*");
+    regex function_call("([^ ]*)\\(([^ ]*)\\)");
 
-    if (regex_match(value, number_expr) && des->type == 0) {
-        des->value = value;
-    } else if (regex_match(value, string_expr) && des->type == 1) {
-        des->value = value;
-    } else if (regex_match(value, var_expr)) {
-        if (!this->search(value)) throw Undeclared(m.str(0));
-        Symbol *s = this->root;
-        if (des->type == s->type) {
-            des->value = s->value;
-        } else {
-            throw TypeMismatch(m.str(0));
-        }
-    } else if (regex_match(value, function_call_expr)) {
-        // if (!this->search(value)) throw Undeclared(m.str(0));
+    // Get type of value
+    // number, string
+    if (regex_match(value, number) || regex_match(value, str)) {
+        Symbol *res = search(name, num_comp, num_splay);
+        if (res == nullptr) throw Undeclared(line);
+        if (res->name != name) throw Undeclared(line);
+        if (regex_match(value, number) && res->type != 0)
+            throw TypeMismatch(line);
+        if (regex_match(value, str) && res->type != 1)
+            throw TypeMismatch(line);
+        cout << num_comp << " " << num_splay << endl;
+        return;
     }
+    // variable
+    if (regex_match(value, var)) {
+        // Check value first
+        Symbol *s = search(value, num_comp, num_splay);
+        if (s == nullptr || s->name != value) throw Undeclared(line);
+        // Search for name
+        Symbol *des = search(name, num_comp, num_splay);
+        if (des == nullptr || des->name != name) throw Undeclared(line);
+        // Check type
+        if (des->type != s->type) throw TypeMismatch(line);
 
-    cout << this->root->name;
+        cout << num_comp << " " << num_splay << endl;
+        return;
+    }
+    // Function call
+    if (regex_match(value, m1, function_call)) {
+        smatch m2;
+        string f_name = m1.str(1);
+        string para = m1.str(2);
+        string para_pattern;
+        string return_type;
+
+        // Search for function name
+        Symbol *s = search(f_name, num_comp, num_splay);
+        if (s == nullptr || s->name != f_name) throw Undeclared(line);
+        if (s->type != 2) throw TypeMismatch(line);
+
+        regex function_pattern("\\(((number|string)(,number|,string)*)?\\)->(number|string)");
+        if (regex_match(s->para, m2, function_pattern)) {
+            para_pattern = m2.str(1);
+            return_type = m2.str(m2.size() - 1);
+        }
+
+        para = getParaType(para);
+        // Check para pass valid with function
+        if (para == "error") throw TypeMismatch(line);
+        if (para.compare(para_pattern) != 0) {
+            throw TypeMismatch(line);
+        }
+        // Search for name
+        Symbol *des = search(name, num_comp, num_splay);
+        if (des == nullptr || des->name != name) throw Undeclared(line);
+        // Check return type
+        if (des->type != getType(return_type)) throw TypeMismatch(line);
+
+        cout << num_comp << " " << num_splay << endl;
+    }
 }
 
-void SymbolTable::begin() {
-    this->cur_level++;
-}
+void SymbolTable::begin() { this->cur_level++; }
 
 void SymbolTable::end() {
     this->cur_level--;
     if (this->cur_level < 0) throw UnknownBlock();
-    // Delete symbol in this scope
+    this->remove(cur_level + 1);
 }
 
 void SymbolTable::lookup(smatch m) {
+    if (this->root == nullptr) throw Undeclared(m.str(0));
+
     string name = m.str(1);
-    if (search(name)) {
-        cout << this->root->level << endl;
-        return;
+
+    Symbol *res = nullptr;
+    for (int level = cur_level; level >= 0; level--) {
+        if (h_lookup(name, level)) break;
     }
-    throw Undeclared(m.str(0));
-}
 
-void SymbolTable::preorder(Symbol *root) {
-    if (root == nullptr) return;
+    if (this->root->name != name) throw Undeclared(m.str(0));
 
-    cout << root->name << " " << root->level << " " << root->type << endl;
-    preorder(root->left);
-    preorder(root->right);
+    cout << this->root->level << endl;
 }
 
 void SymbolTable::print() {
-    preorder(this->root);
+    string res = preorder(this->root);
+    if (res != "") {
+        cout << res.substr(0, res.size() - 1) << endl;
+    }
 }
 
 void SymbolTable::run(string filename) {
     // Regex
     smatch m;
-    // regex insert_expr("(INSERT) ([a-z][\\w]*) ((\\(((number|string)(,number|,string)*)?\\)->)?(number|string)) (true|false)");
     regex insert_expr("INSERT ([a-z][\\w]*) ([^ ]*) (true|false)");
     regex assign_expr("ASSIGN ([a-z][\\w]*) ([^ ]*)");
     regex begin_expr("BEGIN");
     regex end_expr("END");
     regex lookup_expr("LOOKUP ([a-z][\\w]*)");
     regex print_expr("PRINT");
+    regex remove_expr("REMOVE ([a-z][\\w]*)");
 
     // Read file
     string s;
     ifstream file(filename);
     while (getline(file, s)) {
-        // Insert command
         if (regex_match(s, m, insert_expr)) {
             this->insert(m);
         } else if (regex_match(s, m, assign_expr)) {

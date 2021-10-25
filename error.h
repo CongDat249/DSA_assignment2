@@ -69,7 +69,7 @@ class InvalidDeclaration : public exception
 public:
     InvalidDeclaration(string instruction)
     {
-        mess = "Undeclared: " + instruction;
+        mess = "InvalidDeclaration: " + instruction;
     }
     const char *what() const throw()
     {

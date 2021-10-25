@@ -3,21 +3,15 @@
 #include "main.h"
 
 class Symbol {
-  private:
-    string name;
-    int level;
+   private:
+    string name, para;
     int type;
-    string value;
-    Symbol *right;
-    Symbol *left;
-    Symbol *parent;
+    int level;
+    Symbol *right, *left, *parent;
 
-    // Overload operator
-    bool operator==(Symbol);
-    bool operator<(Symbol);
-    bool operator>(Symbol);
+    int compare(Symbol *);
 
-  public:
+   public:
     Symbol();
     Symbol(string, int, int);
     Symbol(string, int, int, Symbol *);
@@ -26,23 +20,29 @@ class Symbol {
 };
 
 class SymbolTable {
-  private:
+   private:
     Symbol *root;
     int cur_level;
 
     void clear(Symbol *);
     void right_rotate(Symbol *);
     void left_rotate(Symbol *);
-    void splay(Symbol *);
-    void preorder(Symbol *);
-    Symbol* searchHelper(string, int);
-    bool search(string);
+    void remove(Symbol*);
+    void remove(int);
+    int splay(Symbol *);
+    bool h_lookup(string, int);
+    string preorder(Symbol *);
+    Symbol *search(string, int &, int &);
+    Symbol *search_level(string, int, int &);
+    Symbol *getMaxValueNode(Symbol *root);
 
-  public:
+   public:
     SymbolTable();
     ~SymbolTable();
     void run(string filename);
     int getType(string);
+    string getParaType(string);
+    int getValueType(string);
     void insert(smatch);
     void assign(smatch);
     void begin();
