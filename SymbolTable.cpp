@@ -141,12 +141,14 @@ bool SymbolTable::h_lookup(string name, int level) {
             return true;
         } else if (order < 0) {
             if (walker->left == nullptr) {
-                splay(walker);
+                // splay(walker);
+                return false;
             }
             walker = walker->left;
         } else {
             if (walker->right == nullptr) {
-                splay(walker);
+                // splay(walker);
+                return false;
             }
             walker = walker->right;
         }
@@ -186,18 +188,6 @@ Symbol *SymbolTable::getMaxValueNode(Symbol *root) {
     return w;
 }
 
-Symbol *SymbolTable::search(string name, int &num_comp, int &num_splay) {
-    if (this->root == nullptr) return nullptr;
-    for (int level = this->cur_level; level >= 0; level--) {
-        Symbol *res = search_level(name, level, num_comp);
-        num_splay += splay(res);
-        if (this->root->name == name) break;
-    }
-
-    if (this->root->name != name) return nullptr;
-    return this->root;
-}
-
 void SymbolTable::remove(Symbol *res) {
     if (this->root == nullptr) return;
     splay(res);
@@ -208,12 +198,17 @@ void SymbolTable::remove(Symbol *res) {
 
     if (!lh && !rh) {
         delete this->root;
+        this->root = nullptr;
         return;
     } else if (!lh) {
         rh->parent = nullptr;
         delete this->root;
         this->root = rh;
         return;
+    } else if (!rh) {
+        lh->parent = nullptr;
+        delete this->root;
+        this->root = lh;
     } else {
         lh->parent = nullptr;
         delete this->root;
@@ -221,9 +216,7 @@ void SymbolTable::remove(Symbol *res) {
         splay(x);
         this->root = x;
         x->right = rh;
-        if (rh) {
-            rh->parent = x;
-        }
+        rh->parent = x;
     }
 }
 
@@ -237,6 +230,76 @@ void SymbolTable::remove(int level) {
         splay(res);
         remove(res);
     }
+}
+
+string SymbolTable::getParaType(string para, int &num_comp, int &num_splay) {
+    regex number("\\d+");
+    regex str("\'[A-Za-z0-9 ]*\'");
+    regex var("[a-z][\\w]*");
+
+    string res = "";
+    string sub = "";
+    for (int i = 0; i < para.length(); i++) {
+        // cout << sub << endl;
+        if (para[i] != ',') {
+            sub += para[i];
+        }
+        if (para[i] == ',' || i == para.length() - 1) {
+            if (regex_match(sub, number))
+                res += "number,";
+            else if (regex_match(sub, str))
+                res += "string,";
+            else if (regex_match(sub, var)) {
+                Symbol *x = search(sub, num_comp, num_splay);
+                if (!x) return "undeclared";
+                if (x->type == 0)
+                    res += "number,";
+                else if (x->type == 1)
+                    res += "string,";
+            } else
+                return "error";
+
+            sub = "";
+        }
+    }
+    if (res != " ") return res.substr(0, res.size() - 1);
+    return "";
+}
+
+Symbol *SymbolTable::bst_search(string name, int level) {
+    Symbol x(name, level, 0);
+    Symbol *walker = this->root;
+    while (walker != nullptr) {
+        int order = x.compare(walker);
+        if (order == 0) {
+            return walker;
+        } else if (order < 0) {
+            if (walker->left == nullptr) {
+                return walker;
+            }
+            walker = walker->left;
+        } else {
+            if (walker->right == nullptr) {
+                return walker;
+            }
+            walker = walker->right;
+        }
+    }
+    return nullptr;
+}
+
+Symbol *SymbolTable::search(string name, int &num_comp, int &num_splay) {
+    if (this->root == nullptr) return nullptr;
+    for (int level = this->cur_level; level >= 0; level--) {
+        Symbol *res = bst_search(name, level);
+        if (res->name.compare(name) == 0) {
+            res = search_level(name, level, num_comp);
+            num_splay += splay(res);
+            return res;
+        }
+    }
+
+    return NULL;
 }
 
 void SymbolTable::insert(smatch m) {
@@ -310,35 +373,6 @@ void SymbolTable::insert(smatch m) {
     cout << num_comp << " " << num_splay << endl;
 }
 
-string SymbolTable::getParaType(string para) {
-    regex number("\\d+");
-    regex str("\'[A-Za-z0-9 ]*\'");
-    regex var("[a-z][\\w]*");
-
-    string res = "";
-    string sub = "";
-    for (int i = 0; i < para.length(); i++) {
-        // cout << sub << endl;
-        if (para[i] != ',') {
-            sub += para[i];
-        }
-        if (para[i] == ',' || i == para.length() - 1) {
-            if (regex_match(sub, number))
-                res += "number,";
-            else if (regex_match(sub, str))
-                res += "string,";
-            else if (regex_match(sub, var)) {
-            }
-            else
-                return "error";
-
-            sub = "";
-        }
-    }
-    if (res != " ") return res.substr(0, res.size() - 1);
-    return "";
-}
-
 void SymbolTable::assign(smatch m) {
     smatch m1;
     int num_comp = 0;
@@ -351,7 +385,7 @@ void SymbolTable::assign(smatch m) {
     regex number("\\d+");
     regex str("\'[A-Za-z0-9 ]*\'");
     regex var("[a-z][\\w]*");
-    regex function_call("([^ ]*)\\(([^ ]*)\\)");
+    regex function_call("([^ ]*)\\((.*)\\)");
 
     // Get type of value
     // number, string
@@ -361,8 +395,7 @@ void SymbolTable::assign(smatch m) {
         if (res->name != name) throw Undeclared(line);
         if (regex_match(value, number) && res->type != 0)
             throw TypeMismatch(line);
-        if (regex_match(value, str) && res->type != 1)
-            throw TypeMismatch(line);
+        if (regex_match(value, str) && res->type != 1) throw TypeMismatch(line);
         cout << num_comp << " " << num_splay << endl;
         return;
     }
@@ -393,15 +426,17 @@ void SymbolTable::assign(smatch m) {
         if (s == nullptr || s->name != f_name) throw Undeclared(line);
         if (s->type != 2) throw TypeMismatch(line);
 
-        regex function_pattern("\\(((number|string)(,number|,string)*)?\\)->(number|string)");
+        regex function_pattern(
+            "\\(((number|string)(,number|,string)*)?\\)->(number|string)");
         if (regex_match(s->para, m2, function_pattern)) {
             para_pattern = m2.str(1);
             return_type = m2.str(m2.size() - 1);
         }
 
-        para = getParaType(para);
+        para = getParaType(para, num_comp, num_splay);
         // Check para pass valid with function
         if (para == "error") throw TypeMismatch(line);
+        if (para == "undeclared") throw Undeclared(line);
         if (para.compare(para_pattern) != 0) {
             throw TypeMismatch(line);
         }
@@ -412,7 +447,10 @@ void SymbolTable::assign(smatch m) {
         if (des->type != getType(return_type)) throw TypeMismatch(line);
 
         cout << num_comp << " " << num_splay << endl;
+        return;
     }
+
+    throw InvalidInstruction(line);
 }
 
 void SymbolTable::begin() { this->cur_level++; }
@@ -449,7 +487,7 @@ void SymbolTable::run(string filename) {
     // Regex
     smatch m;
     regex insert_expr("INSERT ([a-z][\\w]*) ([^ ]*) (true|false)");
-    regex assign_expr("ASSIGN ([a-z][\\w]*) ([^ ]*)");
+    regex assign_expr("ASSIGN ([a-z][\\w]*) (.*)");
     regex begin_expr("BEGIN");
     regex end_expr("END");
     regex lookup_expr("LOOKUP ([a-z][\\w]*)");
