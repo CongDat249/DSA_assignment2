@@ -1,15 +1,13 @@
 BEGIN
-INSERT i69G2 string false
-INSERT ovWsL string true
-INSERT p number false
-LOOKUP ovWsL
-INSERT clwS string true
-ASSIGN i69G2 clwS
-ASSIGN i69G2 ovWsL
-INSERT ohca string true
-PRINT
-LOOKUP clwS
-PRINT
+INSERT irC string true
 END
+LOOKUP irC
+INSERT l string true
 PRINT
-INSERT s6 (string,number,string)->number true
+INSERT gdlm string false
+BEGIN
+INSERT rfI ()->string true
+ASSIGN gdlm f0Cz
+INSERT v string false
+LOOKUP l
+END
